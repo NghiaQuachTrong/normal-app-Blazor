@@ -1,0 +1,84 @@
+﻿@using BlazorThucTap.Data
+@using MudBlazor
+@using System.Data.SqlClient
+@inject IDialogService DialogService
+@inject KHservice objKHser
+@using static MudBlazor.CategoryTypes
+@inject NavigationManager NavigationManager
+<MudDialog>
+    <DialogContent>
+        <MudItem xs="15" sm="5">
+            <MudTextField @bind-Value="objCI.ID" Label="Mã khách hàng" Variant="Variant.Outlined" ReadOnly="true"></MudTextField>
+            <MudTextField @bind-Value="objCI.TextName" Label="Họ và tên" Variant="Variant.Outlined"></MudTextField>
+            <MudTextField @bind-Value="objCI.TextUser" Label="Username" Variant="Variant.Outlined"></MudTextField>
+            <MudTextField @bind-Value="objCI.TextEmail" Label="E-mail" Variant="Variant.Outlined"></MudTextField>
+            <MudTextField @bind-Value="objCI.TextPhone" Label="Số điện thoại" Variant="Variant.Outlined"></MudTextField>
+            <MudTextField @bind-Value="objCI.BirthDate" Format="yyyy-MM-dd" Label="Ngày tháng năm sinh" InputType="InputType.Date" Variant="Variant.Outlined" />
+            <MudTextField @bind-Value="objCI.TextAddress" Label="Địa chỉ" Variant="Variant.Outlined"></MudTextField>
+            <MudTextField @bind-Value="objCI.TextPass" Label="Mật khẩu" Variant="Variant.Outlined" InputType="@PasswordInput" Adornment="Adornment.End" AdornmentIcon="@PasswordInputIcon" OnAdornmentClick="ButtonTestclick" AdornmentAriaLabel="Show Password"></MudTextField>
+            <MudTextField @bind-Value="objCI.IdBill" Label="Số hóa đơn" Variant="Variant.Outlined" ReadOnly="true"></MudTextField>
+            <MudTextField @bind-Value="objCI.TotalAm" Label="Tổng tiền" Variant="Variant.Outlined"></MudTextField>
+            <MudTextField @bind-Value="objCI.DateBuy" Format="yyyy-MM-dd" Label="Ngày mua" Variant="Variant.Outlined"></MudTextField>
+        </MudItem>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="UpdateKH">Lưu</MudButton>
+        <MudButton Color="Color.Secondary" OnClick="Cancel">Hủy</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+
+    //xử lí
+    [Parameter]
+    public int CurrentID { get; set; }
+    CustomerInfo objCI = new CustomerInfo();
+    protected override async Task OnInitializedAsync()
+    {
+        objCI = await Task.Run(() => objKHser.GetKHByID(CurrentID));
+    }
+    protected void UpdateKH()
+    {
+        objKHser.UpdateKH(objCI);
+        NavigationManager.NavigateTo("Datagrid", forceLoad: true);
+    }
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+
+
+
+    //dialog xử lí
+    DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public CustomerInfo Element { get; set; }
+
+   
+
+    
+
+
+    //password
+    bool isShow;
+    void ButtonTestclick()
+    {
+        @if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+    InputType PasswordInput = InputType.Password;
+    string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+}

@@ -1,0 +1,38 @@
+﻿@using BlazorThucTap.Data
+@using MudBlazor
+@using System.Data.SqlClient
+@inject IDialogService DialogService
+@inject KHservice objKHser
+@using static MudBlazor.CategoryTypes
+@inject NavigationManager NavigationManager
+
+<MudDialog>
+    <DialogContent>
+        Bạn có muốn xóa người dùng này?
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Tertiary" OnClick="DeleteCus">có</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Cancel">không</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+    [Parameter]
+    public int CurrentID { get; set; }
+    CustomerInfo objkh = new CustomerInfo();
+    protected override async Task OnInitializedAsync()
+    {
+        objkh = objKHser.GetKHByID(CurrentID);
+    }
+    protected void DeleteCus()
+    {
+        objKHser.DeleteCus(objkh);
+        NavigationManager.NavigateTo("Datagrid", forceLoad: true);
+    }
+    void Cancel()
+    {
+        NavigationManager.NavigateTo("Datagrid");
+    }
+
+}

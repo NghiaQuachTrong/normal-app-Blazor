@@ -1,0 +1,88 @@
+﻿@page "/"
+@using BlazorThucTap.Data
+@using MudBlazor
+@using System.Data.SqlClient
+@inject IDialogService DialogService
+@inject KHservice objKHser
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Index</PageTitle>
+
+<MudContainer>
+    <MudItem xs="15" sm="5">
+        <MudTextField @bind-Value="@objCI.ID" Label="Mã khách hàng" Variant="Variant.Outlined" ReadOnly="true"></MudTextField>
+        <MudTextField @bind-Value="@objCI.TextName" Label="Họ và tên" Variant="Variant.Outlined"></MudTextField>
+        <MudTextField @bind-Value="@objCI.TextUser" Label="Username" Variant="Variant.Outlined"></MudTextField>
+        <MudTextField @bind-Value="@objCI.TextEmail" Label="E-mail" Variant="Variant.Outlined"></MudTextField>
+        <MudTextField @bind-Value="@objCI.TextPhone" Label="Số điện thoại" Variant="Variant.Outlined"></MudTextField>
+        <MudTextField  @bind-Value="@objCI.BirthDate" Format="yyyy-MM-dd" Label="Ngày tháng năm sinh" InputType="InputType.Date" Variant="Variant.Outlined" />
+        <MudTextField @bind-Value="@objCI.TextAddress" Label="Địa chỉ" Variant="Variant.Outlined"></MudTextField>
+        <MudTextField @bind-Value="@objCI.TextPass"  Label="Mật khẩu" Variant="Variant.Outlined" InputType="@PasswordInput" Adornment="Adornment.End" AdornmentIcon="@PasswordInputIcon" OnAdornmentClick="ButtonTestclick" AdornmentAriaLabel="Show Password"></MudTextField>
+        <MudTextField @bind-Value="@objCI.TotalAm" Label="Tổng tiền" Variant="Variant.Outlined"></MudTextField>
+        <MudTextField @bind-Value="@objCI.IdBill" Label="Số hóa đơn" Variant="Variant.Outlined" ReadOnly="true"></MudTextField>
+        <MudTextField @bind-Value="@objCI.DateBuy" Format="yyyy-MM-dd" Label="Ngày mua" ReadOnly="true" Variant="Variant.Outlined"></MudTextField>
+    </MudItem>
+
+    <MudButton @onclick="OpenDialogAndAddUser" Style="margin-top: 10px" Variant="Variant.Filled" DisableElevation="true" Color="Color.Primary">Thêm người dùng</MudButton>
+    <MudButton @onclick="ClearFields" Style="margin-top: 10px" Variant="Variant.Filled" DisableElevation="true" Color="Color.Transparent">Clear</MudButton>
+</MudContainer>
+
+@code {
+    CustomerInfo objCI = new CustomerInfo();
+    protected void CreateKH()
+    {
+        objKHser.Create(objCI);
+        OpenDialog();
+    }
+    void Cancel()
+    {
+        NavigationManager.NavigateTo("Index");
+    }
+
+
+    protected override void OnInitialized()
+    {
+        objCI = new CustomerInfo
+            {
+                DateBuy = DateTime.Today
+            };
+    }
+    private void ClearFields()
+    {
+        objCI = new CustomerInfo
+            {
+                DateBuy = DateTime.Today
+            };
+    }
+    bool isShow;
+    void ButtonTestclick()
+    {
+        @if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+    InputType PasswordInput = InputType.Password;
+    string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    private void OpenDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        DialogService.Show<SuccessDialog>("Thông báo", options);
+    }
+    private void OpenDialogAndAddUser()
+    {
+        // AddUser();
+        CreateKH();
+        OpenDialog();
+    }        
+}

@@ -1,0 +1,245 @@
+﻿@page "/datagrid"
+@using ClosedXML.Excel
+@using MudBlazor
+@using System.Data
+@using System.Data.SqlClient
+@inject IDialogService DialogService
+@inject KHservice objKHser
+@using BlazorThucTap.Data
+@using static MudBlazor.CategoryTypes
+@using ExcelDataReader
+@using System.IO
+@using System.Threading.Tasks
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+
+
+<PageTitle>Bảng dữ liệu</PageTitle>
+<h1>Bảng dữ liệu </h1>
+@if(objCustmr == null)
+{
+    <p><em>Loading...</em></p>
+
+}
+else
+{
+    <MudTextField @bind-Value="searchText" Placeholder="Tìm kiếm" Class="mb-4" />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SearchCustomer">Tìm kiếm</MudButton>
+
+    <MudTable Items="objCustmr" Hover="true" Dense="true" FixedHeader="true">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Tên khách hàng</MudTh>
+            <MudTh>Account</MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>Số điện thoại</MudTh>
+            <MudTh>Ngày sinh</MudTh>
+            <MudTh>Mật khẩu</MudTh>
+            <MudTh>Tổng tiền</MudTh>
+            <MudTh>Mã hóa đơn</MudTh>
+            <MudTh>Ngày mua</MudTh>
+            <MudTh>Hành động</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.ID</MudTd>
+            <MudTd DataLabel="Tên khách hàng">@context.TextName</MudTd>
+            <MudTd DataLabel="Account">@context.TextUser</MudTd>
+            <MudTd DataLabel="Email">@context.TextEmail</MudTd>
+            <MudTd DataLabel="Số điện thoại">@context.TextPhone</MudTd>
+            <MudTd DataLabel="Ngày sinh">@context.BirthDate?.ToString("yyyy-MM-dd")</MudTd>
+            <MudTd DataLabel="Mật khẩu">@context.TextPass</MudTd>
+            <MudTd DataLabel="Tổng tiền">@context.TotalAm</MudTd>
+            <MudTd DataLabel="Mã hóa đơn">@context.IdBill</MudTd>
+            <MudTd DataLabel="Ngày mua">@context.DateBuy.ToString("yyyy-MM-dd")</MudTd>
+            <MudTd DataLabel="Hành động">
+                <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Outlined.Edit" OnClick="@(() => OpenDialog(@context.ID))" />
+                <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Filled.Delete" OnClick="@(() => OpenDelDialog(@context.ID))" aria-label="delete" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[] { 10, 20, 50, 100 }" />
+        </PagerContent>
+    </MudTable>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@ExportToExcelAndDia">Xuất ra Excel</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="ChooseFile">Choose Excel File</MudButton>
+    <input type="file" id="fileInput" style="display:none" @ref="fileInputRef" />
+
+}
+@code {
+    List<CustomerInfo> objCustmr;
+
+    protected override async Task OnInitializedAsync()
+    {
+        objCustmr = await Task.Run(() => objKHser.GetCustomer());
+        await SearchCustomer();
+    }
+
+
+    DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    private void OpenDialog(int id)
+    {
+        var options = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var parameters = new DialogParameters { ["CurrentID"] = id };
+        DialogService.Show<EditKHDialog>("Chỉnh sửa thông tin", parameters, options);
+    }
+
+    private void OpenDelDialog(int id)
+    {
+        var options = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var parameters = new DialogParameters { ["CurrentID"] = id };
+        DialogService.Show<DelDialog>("Xóa thông tin", parameters, options);
+    }
+
+
+    //excel
+    private async Task ExportToExcel()
+    {
+        if (objCustmr != null && objCustmr.Count > 0)
+        {
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Customers");
+
+                // Add headers
+                worksheet.Cell(1, 1).Value = "ID";
+                worksheet.Cell(1, 2).Value = "Tên khách hàng";
+                worksheet.Cell(1, 3).Value = "Account";
+                worksheet.Cell(1, 4).Value = "Email";
+                worksheet.Cell(1, 5).Value = "Số điện thoại";
+                worksheet.Cell(1, 6).Value = "Ngày sinh";
+                worksheet.Cell(1, 7).Value = "Mật khẩu";
+                worksheet.Cell(1, 8).Value = "Tổng tiền";
+                worksheet.Cell(1, 9).Value = "Mã hóa đơn";
+                worksheet.Cell(1, 10).Value = "Ngày mua";
+
+                // Add data
+                int row = 2;
+                foreach (var cust in objCustmr)
+                {
+                    worksheet.Cell(row, 1).Value = cust.ID;
+                    worksheet.Cell(row, 2).Value = cust.TextName;
+                    worksheet.Cell(row, 3).Value = cust.TextUser;
+                    worksheet.Cell(row, 4).Value = cust.TextEmail;
+                    worksheet.Cell(row, 5).Value = cust.TextPhone;
+                    worksheet.Cell(row, 6).Value = cust.BirthDate?.ToString("yyyy-MM-dd") ?? "N/A";
+                    worksheet.Cell(row, 7).Value = cust.TextPass;
+                    worksheet.Cell(row, 8).Value = cust.TotalAm;
+                    worksheet.Cell(row, 9).Value = cust.IdBill;
+                    worksheet.Cell(row, 10).Value = cust.DateBuy.ToString("yyyy-MM-dd");
+
+                    row++;
+                }
+
+                // Save the workbook
+                string excelFilePath = "ExportData.xlsx";
+                workbook.SaveAs(excelFilePath);
+            }
+        }
+    }
+    private void OpenEDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        DialogService.Show<SuccessExcelExport>("Thông báo", options);
+    }
+    private void ExportToExcelAndDia()
+    {
+        OpenEDialog();
+        ExportToExcel();
+    }
+
+    //import excel
+    private ElementReference fileInputRef;
+    private DataTable dataTable;
+
+    private async Task ChooseFile()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('fileInput').click();");
+    }
+
+    private async Task HandleFileSelect(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file != null)
+        {
+            using (var stream = file.OpenReadStream())
+            {
+                var result = await LoadExcel(stream);
+
+                if (result != null)
+                {
+                    dataTable = result.Tables[0];
+                }
+                else
+                {
+                    await DialogService.ShowMessageBox("Error", "Failed to load Excel file");
+                }
+            }
+        }
+    }
+
+    private async Task<DataSet> LoadExcel(Stream stream)
+    {
+        try
+        {
+            using (var reader = ExcelReaderFactory.CreateReader(stream))
+            {
+                var result = reader.AsDataSet();
+                Console.WriteLine($"Number of tables in Excel file: {result.Tables.Count}");
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading Excel file: {ex.Message}");
+            return null;
+        }
+    }
+
+    //Search
+    string searchText;
+
+    private async Task SearchCustomer()
+    {
+        try
+        {
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("SearchCustomers", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@SearchText", searchText);
+                con.Open();
+
+                using (SqlDataReader rdr = await cmd.ExecuteReaderAsync())
+                {
+                    objCustmr = new List<CustomerInfo>();
+
+                    while (await rdr.ReadAsync())
+                    {
+                        CustomerInfo customer = new CustomerInfo();
+                        customer.ID = Convert.ToInt32(rdr["ID"]);
+                        customer.TextName = rdr["TextName"].ToString();
+                        customer.TextUser = rdr["TextUser"].ToString();
+                        customer.TextEmail = rdr["TextEmail"].ToString();
+                        customer.TextPhone = rdr["TextPhone"].ToString();
+                        customer.BirthDate = Convert.ToDateTime(rdr["BirthDate"]);
+                        customer.TextAddress = rdr["TextAddress"].ToString();
+                        customer.TextPass = rdr["TextPass"].ToString();
+
+
+                        objCustmr.Add(customer);
+                    }
+                }
+
+                con.Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error searching customers: " + ex.Message);
+        }
+    }
+    private string connectionString = "Data Source=DESKTOP-8M8MSCI;Initial Catalog=ThucTapBlazor2;Integrated Security=True;Encrypt=True;TrustServerCertificate=True";
+}
